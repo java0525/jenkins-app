@@ -99,8 +99,52 @@ pipeline {
                     node_modules/.bin/netlify deploy --dir=build --no-build --json > deploy-outpot.json
                     node_modules/.bin/node-jq -r '.deploy_url' deploy-outpot.json
                 '''
+
+                script {
+                    env.STAGING_URL = sh(script : "node_modules/.bin/node-jq -r '.deploy_url' deploy-outpot.json" ,returnStdout:true)
             }
+            
+            }
+
+          
+
         }
+
+
+        stage('Staging E2E') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                    reuseNode true
+                }
+            }
+
+             environment {
+                CI_ENVIRONMENT_URL =  "${env.STAGING_URL}"
+             }
+
+
+            steps {
+                sh '''
+                    npx playwright test --reporter=line
+                '''
+            }
+            post {
+                always {
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        icon: '',
+                        keepAll: false,
+                        reportDir: 'playwright-report',
+                        reportFiles: 'index.html',
+                        reportName: 'Stating E2E Report',
+                        reportTitles: '',
+                        useWrapperFileDirectly: true
+                    ])
+                }
+            }
+        }        
 
         stage('Approval to Production'){
             steps {
@@ -158,7 +202,7 @@ pipeline {
                         keepAll: false,
                         reportDir: 'playwright-report',
                         reportFiles: 'index.html',
-                        reportName: 'Playwright E2E Report',
+                        reportName: 'Prod E2E Report',
                         reportTitles: '',
                         useWrapperFileDirectly: true
                     ])
