@@ -60,7 +60,7 @@ pipeline {
                             npm install serve
                             node_modules/.bin/serve -s build &
                             sleep 10
-                            npx playwright test --reporter=line
+                            npx playwright test --reporter=html
                         '''
                     }
                     post {
@@ -157,7 +157,7 @@ pipeline {
                     echo "DEploying to production : Site ID  : $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
                     node_modules/.bin/netlify deploy --dir=build --prod --no-build
-                    npx playwright test --reporter=line
+                    npx playwright test --reporter=html
                 '''
             }
             post {
