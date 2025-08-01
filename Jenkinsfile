@@ -147,49 +147,106 @@ pipeline {
 
 
 
-        stage('Deploy prod'){
-                    agent {
-                        docker {
-                            image 'my-playwright'
-                            reuseNode true
-                        }
-                    }
+        // stage('Deploy prod'){
+        //             agent {
+        //                 docker {
+        //                     image 'my-playwright'
+        //                     reuseNode true
+        //                 }
+        //             }
 
-                    environment {
-                        // CI_ENVIRONMENT_URL = 'YOUR NETLIFY URL'
-                        // CI_ENVIRONMENT_URL=$(node-jq -r '.deploy_url' deploy-output.json)
-                        sh 'CI_ENVIRONMENT_URL=$(node-jq -r \'.deploy_url\' deploy-output.json)'
+        //            // environment {
+        //                 // CI_ENVIRONMENT_URL = 'YOUR NETLIFY URL'
+        //                 // CI_ENVIRONMENT_URL=$(node-jq -r '.deploy_url' deploy-output.json)
+        //                 //sh 'CI_ENVIRONMENT_URL=$(node-jq -r \'.deploy_url\' deploy-output.json)'
 
 
-                    }
+        //             //}
 
-                    steps {
-                        sh '''
-                            node --version
-                            netlify --version
-                            echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                            netlify status
-                            netlify deploy --dir=build --prod --no-build
-                            npx playwright test  --reporter=html
-                        '''
-                    }
+        //             steps {
 
-            post {
-                always {
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: false,
-                        icon: '',
-                        keepAll: false,
-                        reportDir: 'playwright-report',
-                        reportFiles: 'index.html',
-                        reportName: 'Prod E2E Report',
-                        reportTitles: '',
-                        useWrapperFileDirectly: true
-                    ])
-                }
-            }
+        //                 script {
+        //                             env.CI_ENVIRONMENT_URL = sh(
+        //                                 script: "node-jq -r '.deploy_url' deploy-output.json",
+        //                                 returnStdout: true
+        //                             ).trim()
+        //                             echo "Production deployed at: ${env.CI_ENVIRONMENT_URL}"
+        //                         }
+
+        //                 sh '''
+        //                     node --version
+        //                     netlify --version
+        //                     echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
+        //                     netlify status
+        //                     netlify deploy --dir=build --prod --no-build
+        //                     npx playwright test  --reporter=html
+        //                 '''
+        //             }
+
+        //     post {
+        //         always {
+        //             publishHTML([
+        //                 allowMissing: false,
+        //                 alwaysLinkToLastBuild: false,
+        //                 icon: '',
+        //                 keepAll: false,
+        //                 reportDir: 'playwright-report',
+        //                 reportFiles: 'index.html',
+        //                 reportName: 'Prod E2E Report',
+        //                 reportTitles: '',
+        //                 useWrapperFileDirectly: true
+        //             ])
+        //         }
+        //     }
+        // }
+
+        stage('Deploy prod') {
+    agent {
+        docker {
+            image 'my-playwright'
+            reuseNode true
         }
+    }
+
+    steps {
+        sh '''
+            node --version
+            netlify --version
+            echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
+            netlify status
+            netlify deploy --dir=build --prod --no-build --json > deploy-output.json
+        '''
+
+        script {
+            env.CI_ENVIRONMENT_URL = sh(
+                script: "node-jq -r '.deploy_url' deploy-output.json",
+                returnStdout: true
+            ).trim()
+            echo "Production deployed at: ${env.CI_ENVIRONMENT_URL}"
+        }
+
+        sh '''
+            npx playwright test --reporter=html
+        '''
+    }
+
+    post {
+        always {
+            publishHTML([
+                allowMissing: false,
+                alwaysLinkToLastBuild: false,
+                icon: '',
+                keepAll: false,
+                reportDir: 'playwright-report',
+                reportFiles: 'index.html',
+                reportName: 'Prod E2E Report',
+                reportTitles: '',
+                useWrapperFileDirectly: true
+            ])
+        }
+    }
+}
+
 
 
     }
