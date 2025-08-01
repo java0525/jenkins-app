@@ -37,7 +37,7 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
+        stage('Tests') {
             parallel {
                 stage('Unit Test') {
                     agent {
@@ -62,14 +62,14 @@ pipeline {
                 stage('E2E') {
                     agent {
                         docker {
-                            image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                            image 'my-playwright'
                             reuseNode true
                         }
                     }
                     steps {
                         sh '''
-                            npm install serve
-                            node_modules/.bin/serve -s build &
+                            # npm install serve
+                            serve -s build &
                             sleep 10
                             npx playwright test --reporter=html
                         '''
@@ -114,7 +114,7 @@ pipeline {
                     netlify status
                     netlify deploy --dir=build --no-build --json > deploy-output.json
                     CI_ENVIRONMENT_URL=$(node-jq -r '.deploy_url' deploy-output.json)
-                    npx playwright test --reporter=line
+                    npx playwright test --reporter=html
                 '''
             }
             post {
@@ -126,7 +126,7 @@ pipeline {
                         keepAll: false,
                         reportDir: 'playwright-report',
                         reportFiles: 'index.html',
-                        reportName: 'Stating E2E Report',
+                        reportName: 'Staging E2E Report',
                         reportTitles: '',
                         useWrapperFileDirectly: true
                     ])
@@ -156,7 +156,9 @@ pipeline {
                     }
 
                     environment {
-                        CI_ENVIRONMENT_URL = 'YOUR NETLIFY URL'
+                        # CI_ENVIRONMENT_URL = 'YOUR NETLIFY URL'
+                        CI_ENVIRONMENT_URL=$(node-jq -r '.deploy_url' deploy-output.json)
+
                     }
 
                     steps {
