@@ -157,7 +157,9 @@ pipeline {
 
                     environment {
                         // CI_ENVIRONMENT_URL = 'YOUR NETLIFY URL'
-                        CI_ENVIRONMENT_URL=$(node-jq -r '.deploy_url' deploy-output.json)
+                        // CI_ENVIRONMENT_URL=$(node-jq -r '.deploy_url' deploy-output.json)
+                        sh 'CI_ENVIRONMENT_URL=$(node-jq -r \'.deploy_url\' deploy-output.json)'
+
 
                     }
 
